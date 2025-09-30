@@ -275,6 +275,43 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .component-item {
+      padding: 12px 16px;
+      margin: 5px 0;
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .component-item:hover {
+      border-color: #667eea;
+      background: #f5f7ff;
+      transform: translateX(5px);
+    }
+
+    .component-item.selected {
+      border-color: #667eea;
+      background: #e3f2fd;
+    }
+
+    .component-name {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .component-type {
+      font-size: 12px;
+      color: #666;
+      background: #e0e0e0;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -283,7 +320,7 @@
     <p class="subtitle">Fetch Figma components and render them as real buttons!</p>
 
     <div class="hint">
-      💡 <strong>Quick start:</strong> Enter your Figma file key and component name, then click "Fetch from Figma"
+      💡 <strong>Quick start:</strong> Enter your Figma file key, get components list, then click any component to preview!
     </div>
 
     <div class="input-group">
@@ -296,19 +333,15 @@
       >
     </div>
 
-    <div class="input-group">
-      <label for="componentName">Component Name</label>
-      <input
-        type="text"
-        id="componentName"
-        placeholder="e.g., Button or Primary Button"
-        value="Button"
-      >
-    </div>
-
-    <button class="fetch-button" id="fetchBtn" onclick="fetchComponent()">
-      Fetch from Figma
+    <button class="fetch-button" id="listBtn" onclick="getComponentsList()">
+      Get Components List
     </button>
+
+    <div id="componentsList" style="display: none; margin-top: 20px;">
+      <h3 style="font-size: 16px; margin-bottom: 10px; color: #333;">Components in File</h3>
+      <div id="componentsContainer" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; border-radius: 8px; padding: 10px;">
+      </div>
+    </div>
 
     <div class="result-area" id="resultArea" style="display: none;">
       <div class="result-title">✨ Result</div>
@@ -357,22 +390,93 @@
   </div>
 
   <script>
-    async function fetchComponent() {
+    let selectedComponentName = null;
+
+    async function getComponentsList() {
       const fileKey = document.getElementById('fileKey').value.trim();
-      const componentName = document.getElementById('componentName').value.trim();
-      const fetchBtn = document.getElementById('fetchBtn');
+      const listBtn = document.getElementById('listBtn');
+      const componentsList = document.getElementById('componentsList');
+      const componentsContainer = document.getElementById('componentsContainer');
+
+      if (!fileKey) {
+        alert('Please enter Figma File Key');
+        return;
+      }
+
+      // Show loading state
+      listBtn.disabled = true;
+      listBtn.innerHTML = '<span class="loading"></span>';
+      componentsContainer.innerHTML = '<div class="empty-state">Loading components...</div>';
+      componentsList.style.display = 'block';
+
+      try {
+        const response = await fetch('/api/list-components', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fileKey }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Display components list
+          componentsContainer.innerHTML = '';
+
+          if (data.components.length === 0) {
+            componentsContainer.innerHTML = '<div class="empty-state">No components found</div>';
+          } else {
+            data.components.forEach(comp => {
+              const item = document.createElement('div');
+              item.className = 'component-item';
+              item.onclick = () => selectComponent(comp.name, item);
+
+              const indent = '  '.repeat(comp.depth);
+              item.innerHTML = `
+                <span class="component-name">${indent}${comp.name}</span>
+                <span class="component-type">${comp.type}</span>
+              `;
+
+              componentsContainer.appendChild(item);
+            });
+          }
+        } else {
+          componentsContainer.innerHTML = `<div class="empty-state" style="color: #d32f2f;">${data.error || 'Failed to load components'}</div>`;
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        componentsContainer.innerHTML = `<div class="empty-state" style="color: #d32f2f;">Network error: ${error.message}</div>`;
+      } finally {
+        listBtn.disabled = false;
+        listBtn.textContent = 'Get Components List';
+      }
+    }
+
+    function selectComponent(componentName, itemElement) {
+      selectedComponentName = componentName;
+
+      // Update UI to show selected
+      document.querySelectorAll('.component-item').forEach(el => el.classList.remove('selected'));
+      itemElement.classList.add('selected');
+
+      // Fetch component details
+      fetchComponent(componentName);
+    }
+
+    async function fetchComponent(componentName) {
+      const fileKey = document.getElementById('fileKey').value.trim();
       const resultArea = document.getElementById('resultArea');
       const messageDiv = document.getElementById('message');
       const buttonContainer = document.getElementById('buttonContainer');
 
       if (!fileKey || !componentName) {
-        alert('Please enter both File Key and Component Name');
+        alert('Please select a component from the list');
         return;
       }
 
       // Show loading state
-      fetchBtn.disabled = true;
-      fetchBtn.innerHTML = '<span class="loading"></span>';
       resultArea.style.display = 'block';
       messageDiv.innerHTML = '<div class="message">Fetching from Figma...</div>';
       buttonContainer.innerHTML = '<div class="empty-state">Loading...</div>';
@@ -488,9 +592,6 @@
         console.error('Error:', error);
         messageDiv.innerHTML = `<div class="message error">✗ Network error: ${error.message}</div>`;
         buttonContainer.innerHTML = '<div class="empty-state">Failed to load button</div>';
-      } finally {
-        fetchBtn.disabled = false;
-        fetchBtn.textContent = 'Fetch from Figma';
       }
     }
 
@@ -583,10 +684,10 @@
       });
     }
 
-    // Allow Enter key to submit
-    document.getElementById('componentName').addEventListener('keypress', (e) => {
+    // Allow Enter key to get list
+    document.getElementById('fileKey').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        fetchComponent();
+        getComponentsList();
       }
     });
   </script>

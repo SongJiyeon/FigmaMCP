@@ -14,6 +14,60 @@ const FIGMA_TOKEN = process.env.FIGMA_TOKEN;
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// API endpoint to list all components in a Figma file
+app.post('/api/list-components', async (req, res) => {
+  const { fileKey } = req.body;
+
+  if (!FIGMA_TOKEN) {
+    return res.status(500).json({ error: 'FIGMA_TOKEN not configured' });
+  }
+
+  if (!fileKey) {
+    return res.status(400).json({ error: 'fileKey is required' });
+  }
+
+  try {
+    const response = await axios.get(
+      `https://api.figma.com/v1/files/${fileKey}`,
+      {
+        headers: {
+          'X-Figma-Token': FIGMA_TOKEN,
+        },
+      }
+    );
+
+    const components = [];
+    function collectComponents(node, depth = 0) {
+      if (node.type === 'FRAME') {
+        components.push({
+          name: node.name,
+          type: node.type,
+          id: node.id,
+          depth: depth
+        });
+      }
+      if (node.children) {
+        node.children.forEach(child => collectComponents(child, depth + 1));
+      }
+    }
+
+    collectComponents(response.data.document);
+
+    res.json({
+      success: true,
+      fileName: response.data.name,
+      components: components
+    });
+
+  } catch (error) {
+    console.error('Error:', error.message);
+    res.status(500).json({
+      error: 'Failed to fetch from Figma',
+      details: error.response?.data?.err || error.message
+    });
+  }
+});
+
 // API endpoint to fetch Figma component
 app.post('/api/fetch-component', async (req, res) => {
   const { fileKey, componentName } = req.body;

@@ -1,0 +1,22 @@
+{
+  "name": "figma-mcp-demo",
+  "version": "1.0.0",
+  "description": "Figma MCP Demo - A Model Context Protocol server that fetches Figma designs and generates code",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "example": "node examples/generate-button.js",
+    "list": "node examples/list-components.js",
+    "web": "node web/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Figma MCP Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #555;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .fetch-button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+    }
+
+    .fetch-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .fetch-button:active {
+      transform: translateY(0);
+    }
+
+    .fetch-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .result-area {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 2px solid #f0f0f0;
+    }
+
+    .result-title {
+      color: #333;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+    }
+
+    .figma-button {
+      transition: all 0.2s ease;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .figma-button:hover {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+
+    .figma-button:active {
+      transform: scale(0.98);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 30px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hint {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #1976d2;
+    }
+
+    .code-section {
+      margin-top: 20px;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #2d2d2d;
+      color: white;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .code-header:hover {
+      background: #3d3d3d;
+    }
+
+    .code-toggle {
+      font-size: 18px;
+      transition: transform 0.3s;
+    }
+
+    .code-toggle.open {
+      transform: rotate(180deg);
+    }
+
+    .code-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: #1e1e1e;
+      border-radius: 0 0 8px 8px;
+    }
+
+    .code-content.open {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .code-box {
+      padding: 16px;
+      margin: 0;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #d4d4d4;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .code-box .key {
+      color: #9cdcfe;
+    }
+
+    .code-box .string {
+      color: #ce9178;
+    }
+
+    .code-box .number {
+      color: #b5cea8;
+    }
+
+    .copy-button {
+      padding: 6px 12px;
+      background: #007acc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    .copy-button:hover {
+      background: #005a9e;
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Figma MCP Demo</h1>
+    <p class="subtitle">Fetch Figma components and render them as real buttons!</p>
+
+    <div class="hint">
+      💡 <strong>Quick start:</strong> Enter your Figma file key and component name, then click "Fetch from Figma"
+    </div>
+
+    <div class="input-group">
+      <label for="fileKey">Figma File Key</label>
+      <input
+        type="text"
+        id="fileKey"
+        placeholder="e.g., yckFuRBgsDeyItv13mD6ma"
+        value="yckFuRBgsDeyItv13mD6ma"
+      >
+    </div>
+
+    <div class="input-group">
+      <label for="componentName">Component Name</label>
+      <input
+        type="text"
+        id="componentName"
+        placeholder="e.g., Button or Primary Button"
+        value="Button"
+      >
+    </div>
+
+    <button class="fetch-button" id="fetchBtn" onclick="fetchComponent()">
+      Fetch from Figma
+    </button>
+
+    <div class="result-area" id="resultArea" style="display: none;">
+      <div class="result-title">✨ Result</div>
+      <div id="message"></div>
+
+      <h3 style="font-size: 16px; margin-bottom: 10px; color: #333;">Preview</h3>
+      <div class="button-container" id="buttonContainer">
+        <div class="empty-state">No component loaded yet</div>
+      </div>
+
+      <div class="code-section" style="margin-top: 20px;">
+        <div class="code-header" onclick="toggleComponentInfo()">
+          <span>ℹ️ Component Info</span>
+          <span class="code-toggle" id="componentInfoToggle">▼</span>
+        </div>
+        <div class="code-content" id="componentInfoContent">
+          <div id="componentInfo" style="background: #1e1e1e; padding: 15px; font-size: 14px; color: #d4d4d4;">
+            <div class="empty-state" style="color: #999;">No data yet</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-section">
+        <div class="code-header" onclick="toggleRawData()">
+          <span>🔍 Raw Component Data</span>
+          <span class="code-toggle" id="rawDataToggle">▼</span>
+        </div>
+        <div class="code-content" id="rawDataContent">
+          <pre class="code-box" id="rawDataBox">// No data yet</pre>
+        </div>
+      </div>
+
+      <div class="code-section">
+        <div class="code-header" onclick="toggleCode()">
+          <span>📝 View Generated Code</span>
+          <div>
+            <button class="copy-button" onclick="copyCode(event)">Copy</button>
+            <span class="code-toggle" id="codeToggle">▼</span>
+          </div>
+        </div>
+        <div class="code-content" id="codeContent">
+          <pre class="code-box" id="codeBox">// No code generated yet</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchComponent() {
+      const fileKey = document.getElementById('fileKey').value.trim();
+      const componentName = document.getElementById('componentName').value.trim();
+      const fetchBtn = document.getElementById('fetchBtn');
+      const resultArea = document.getElementById('resultArea');
+      const messageDiv = document.getElementById('message');
+      const buttonContainer = document.getElementById('buttonContainer');
+
+      if (!fileKey || !componentName) {
+        alert('Please enter both File Key and Component Name');
+        return;
+      }
+
+      // Show loading state
+      fetchBtn.disabled = true;
+      fetchBtn.innerHTML = '<span class="loading"></span>';
+      resultArea.style.display = 'block';
+      messageDiv.innerHTML = '<div class="message">Fetching from Figma...</div>';
+      buttonContainer.innerHTML = '<div class="empty-state">Loading...</div>';
+
+      try {
+        const response = await fetch('/api/fetch-component', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fileKey, componentName }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Show success message
+          const style = data.component;
+          messageDiv.innerHTML = `<div class="message success">✓ ${data.message} (Type: ${style.type})</div>`;
+
+          // Create and render the component based on type
+          let element;
+
+          if (style.type === 'input') {
+            // Render as input field
+            element = document.createElement('input');
+            element.type = 'text';
+            element.placeholder = style.text;
+            element.style.width = `${style.width}px`;
+            element.style.height = `${style.height}px`;
+            element.style.backgroundColor = style.backgroundColor;
+            element.style.color = style.color;
+            element.style.fontSize = `${style.fontSize}px`;
+            element.style.fontWeight = style.fontWeight;
+            element.style.textAlign = style.textAlign;
+            element.style.borderRadius = `${style.borderRadius}px`;
+            element.style.padding = '8px 12px';
+            element.style.border = '1px solid #ddd';
+            element.style.boxSizing = 'border-box';
+            element.style.fontFamily = 'inherit';
+          } else if (style.type === 'text') {
+            // Render as text/label
+            element = document.createElement('div');
+            element.style.width = `${style.width}px`;
+            element.style.height = `${style.height}px`;
+            element.style.backgroundColor = style.backgroundColor;
+            element.style.color = style.color;
+            element.style.fontSize = `${style.fontSize}px`;
+            element.style.fontWeight = style.fontWeight;
+            element.style.textAlign = style.textAlign;
+            element.style.borderRadius = `${style.borderRadius}px`;
+            element.style.display = 'flex';
+            element.style.alignItems = 'center';
+            element.style.justifyContent = style.textAlign === 'center' ? 'center' :
+                                          style.textAlign === 'right' ? 'flex-end' : 'flex-start';
+            element.style.padding = '8px 12px';
+            element.textContent = style.text;
+          } else {
+            // Render as button
+            element = document.createElement('button');
+            element.className = 'figma-button';
+            element.textContent = style.text;
+            element.style.width = `${style.width}px`;
+            element.style.height = `${style.height}px`;
+            element.style.backgroundColor = style.backgroundColor;
+            element.style.color = style.color;
+            element.style.border = 'none';
+            element.style.borderRadius = `${style.borderRadius}px`;
+            element.style.fontSize = `${style.fontSize}px`;
+            element.style.fontWeight = style.fontWeight;
+
+            element.onclick = () => {
+              alert(`You clicked the "${style.text}" button from Figma! 🎉`);
+            };
+          }
+
+          buttonContainer.innerHTML = '';
+          buttonContainer.appendChild(element);
+
+          // Update component info
+          const componentInfo = document.getElementById('componentInfo');
+          componentInfo.innerHTML = `
+            <div style="line-height: 1.8; color: #d4d4d4;">
+              <strong style="color: #9cdcfe;">Type:</strong> ${style.type}<br>
+              <strong style="color: #9cdcfe;">Text:</strong> ${style.text}<br>
+              <strong style="color: #9cdcfe;">Size:</strong> ${Math.round(style.width)}×${Math.round(style.height)}px<br>
+              <strong style="color: #9cdcfe;">Background:</strong> <span style="display: inline-block; width: 16px; height: 16px; background: ${style.backgroundColor}; border: 1px solid #555; vertical-align: middle; border-radius: 2px;"></span> ${style.backgroundColor}<br>
+              <strong style="color: #9cdcfe;">Text Color:</strong> <span style="display: inline-block; width: 16px; height: 16px; background: ${style.color}; border: 1px solid #555; vertical-align: middle; border-radius: 2px;"></span> ${style.color}<br>
+              <strong style="color: #9cdcfe;">Font Size:</strong> ${style.fontSize}px<br>
+              <strong style="color: #9cdcfe;">Font Weight:</strong> ${style.fontWeight}<br>
+              <strong style="color: #9cdcfe;">Border Radius:</strong> ${style.borderRadius}px<br>
+              <details style="margin-top: 10px;">
+                <summary style="cursor: pointer; color: #888; font-size: 12px;">Debug: Fill Data</summary>
+                <pre style="font-size: 11px; background: #2d2d2d; padding: 8px; margin-top: 5px; overflow-x: auto; border-radius: 4px; color: #ce9178;">${style.fillDebug}</pre>
+              </details>
+            </div>
+          `;
+
+          // Update raw component data
+          document.getElementById('rawDataBox').textContent = JSON.stringify(style, null, 2);
+
+          // Generate HTML code
+          const htmlCode = generateCode(style);
+          document.getElementById('codeBox').textContent = htmlCode;
+
+        } else {
+          // Show error message
+          messageDiv.innerHTML = `<div class="message error">✗ ${data.error || 'Failed to fetch component'}</div>`;
+          buttonContainer.innerHTML = '<div class="empty-state">Failed to load button</div>';
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        messageDiv.innerHTML = `<div class="message error">✗ Network error: ${error.message}</div>`;
+        buttonContainer.innerHTML = '<div class="empty-state">Failed to load button</div>';
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.textContent = 'Fetch from Figma';
+      }
+    }
+
+    function generateCode(style) {
+      if (style.type === 'input') {
+        return `<!-- Input Field from Figma -->
+<input type="text" placeholder="${style.text}" style="
+  width: ${Math.round(style.width)}px;
+  height: ${Math.round(style.height)}px;
+  background-color: ${style.backgroundColor};
+  color: ${style.color};
+  font-size: ${style.fontSize}px;
+  font-weight: ${style.fontWeight};
+  text-align: ${style.textAlign};
+  border-radius: ${style.borderRadius}px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+  font-family: inherit;
+">`;
+      } else if (style.type === 'text') {
+        return `<!-- Text Component from Figma -->
+<div style="
+  width: ${Math.round(style.width)}px;
+  height: ${Math.round(style.height)}px;
+  background-color: ${style.backgroundColor};
+  color: ${style.color};
+  font-size: ${style.fontSize}px;
+  font-weight: ${style.fontWeight};
+  text-align: ${style.textAlign};
+  border-radius: ${style.borderRadius}px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+">
+  ${style.text}
+</div>`;
+      } else {
+        return `<!-- Button Component from Figma -->
+<button style="
+  width: ${Math.round(style.width)}px;
+  height: ${Math.round(style.height)}px;
+  background-color: ${style.backgroundColor};
+  color: ${style.color};
+  font-size: ${style.fontSize}px;
+  font-weight: ${style.fontWeight};
+  border: none;
+  border-radius: ${style.borderRadius}px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+"
+  onmouseover="this.style.opacity='0.8'; this.style.transform='scale(1.02)'"
+  onmouseout="this.style.opacity='1'; this.style.transform='scale(1)'"
+  onclick="alert('Button clicked!')">
+  ${style.text}
+</button>`;
+      }
+    }
+
+    function toggleComponentInfo() {
+      const content = document.getElementById('componentInfoContent');
+      const toggle = document.getElementById('componentInfoToggle');
+      content.classList.toggle('open');
+      toggle.classList.toggle('open');
+    }
+
+    function toggleRawData() {
+      const content = document.getElementById('rawDataContent');
+      const toggle = document.getElementById('rawDataToggle');
+      content.classList.toggle('open');
+      toggle.classList.toggle('open');
+    }
+
+    function toggleCode() {
+      const content = document.getElementById('codeContent');
+      const toggle = document.getElementById('codeToggle');
+      content.classList.toggle('open');
+      toggle.classList.toggle('open');
+    }
+
+    function copyCode(event) {
+      event.stopPropagation();
+      const code = document.getElementById('codeBox').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+        }, 2000);
+      });
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('componentName').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        fetchComponent();
+      }
+    });
+  </script>
+</body>
+</html>
